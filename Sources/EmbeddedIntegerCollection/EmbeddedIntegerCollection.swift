@@ -45,6 +45,33 @@ where
     word = container
     initialBitRange = bitRange
   }
+
+  /// Creates a collection initially vending the maximum amount copies of
+  /// the given value that can be embedded within the given type,
+  /// notating which bit range cap should be considered the first element.
+  ///
+  /// - Precondition: The bit length of `Wrapped` needs to be a multiple of
+  ///   the bit length of `Element`.
+  ///
+  /// - Parameters:
+  ///   - element: The initial value for each embedded element.
+  ///   - type: A metatype specifier for the `Wrapped` type.
+  ///     It does not need to be specified if the surrounding context already
+  ///     locks it in.
+  ///   - bitRange: Whether the collection's first element should be taken from
+  ///     the most-significant bit range,
+  ///     or from the least significant.
+  ///     Increasing indices will go towards the unselected range.
+  @inlinable
+  public init(
+    repeating element: Element,
+    embeddedIn type: Wrapped.Type = Wrapped.self,
+    iteratingFrom bitRange: EmbeddedIteratorDirection
+  ) {
+    self.init(
+      within: Wrapped(element) &* Self.allEmbeddedOnes, iteratingFrom: bitRange
+    )
+  }
 }
 
 /// Indicator for which direction embedded integer elements should be
@@ -85,4 +112,18 @@ extension EmbeddedIntegerCollection: CustomDebugStringConvertible {
     }
     return result
   }
+}
+
+// MARK: - Bit Manipulation Helpers
+
+extension EmbeddedIntegerCollection {
+  // Adapted from "Bit Twiddling Hacks" at
+  // <https://graphics.stanford.edu/~seander/bithacks.html>.
+
+  /// Generates a collection with every element having a value of one.
+  ///
+  /// This can be multipled by an `Element` value to spread that value to
+  /// every embedded element.
+  @usableFromInline
+  static var allEmbeddedOnes: Wrapped { Wrapped.max / Wrapped(Element.max) }
 }
