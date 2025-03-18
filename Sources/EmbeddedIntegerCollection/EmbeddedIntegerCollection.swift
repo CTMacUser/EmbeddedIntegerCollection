@@ -114,6 +114,56 @@ extension EmbeddedIntegerCollection: CustomDebugStringConvertible {
   }
 }
 
+// MARK: Collection Support
+
+extension EmbeddedIntegerCollection: MutableCollection {
+  // Each embedded element can be located by a bit range within
+  // the wrapping integer.
+  // All the elements use the same bit range width,
+  // so the locations mainly differ by the offset of
+  // each element's lowest-order bit from the lowest-order bit of
+  // the wrapping integer.
+  //
+  // The index value is the bit offset for that element.
+  // Simple comparisons work for iteration when starting from
+  // the lowest-order bits and going upward.
+  // Since `Index`'s comparison operators can't be (further) customized,
+  // the solution when starting from the highest-order bits and
+  // going downward is to use the negatives of the offsets.
+  public typealias Index = Int
+
+  public var startIndex: Index {
+    switch initialBitRange {
+    case .mostSignificantFirst:
+      Element.bitWidth - Wrapped.bitWidth
+    case .leastSignificantFirst:
+      0
+    }
+  }
+  public var endIndex: Index {
+    switch initialBitRange {
+    case .mostSignificantFirst:
+      Element.bitWidth
+    case .leastSignificantFirst:
+      Wrapped.bitWidth
+    }
+  }
+
+  public subscript(position: Index) -> Element {
+    get {
+      return .init(truncatingIfNeeded: word >> abs(position))
+    }
+    set {
+      let flipMask = self[position] ^ newValue
+      word ^= Wrapped(flipMask) << abs(position)
+    }
+  }
+
+  public func index(after i: Index) -> Index {
+    return i + Element.bitWidth
+  }
+}
+
 // MARK: - Bit Manipulation Helpers
 
 extension EmbeddedIntegerCollection {
