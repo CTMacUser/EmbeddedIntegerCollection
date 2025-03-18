@@ -116,7 +116,8 @@ extension EmbeddedIntegerCollection: CustomDebugStringConvertible {
 
 // MARK: Collection Support
 
-extension EmbeddedIntegerCollection: MutableCollection {
+extension EmbeddedIntegerCollection: BidirectionalCollection, MutableCollection
+{
   // Each embedded element can be located by a bit range within
   // the wrapping integer.
   // All the elements use the same bit range width,
@@ -161,6 +162,10 @@ extension EmbeddedIntegerCollection: MutableCollection {
 
   public func index(after i: Index) -> Index {
     return i + Element.bitWidth
+  }
+
+  public func index(before i: Index) -> Index {
+    return i - Element.bitWidth
   }
 }
 

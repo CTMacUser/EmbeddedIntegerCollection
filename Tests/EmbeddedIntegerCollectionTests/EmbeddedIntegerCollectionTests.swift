@@ -85,4 +85,11 @@ func basicCollections(
   let newExpected = [expected.first!] + [sentinelValue] + expected[2...]
   collection[secondIndex] = sentinelValue
   #expect(collection.elementsEqual(newExpected))
+
+  // BidirectionalCollection
+  #expect(
+    collection.indices.lazy.reversed().map {
+      collection[$0]
+    }.elementsEqual(newExpected.reversed())
+  )
 }
