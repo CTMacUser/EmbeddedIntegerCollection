@@ -88,9 +88,5 @@ func basicCollections(
   #expect(collection.elementsEqual(newExpected))
 
   // BidirectionalCollection
-  #expect(
-    collection.indices.lazy.reversed().map {
-      collection[$0]
-    }.elementsEqual(newExpected.reversed())
-  )
+  #expect(collection.reversed().elementsEqual(newExpected.reversed()))
 }
