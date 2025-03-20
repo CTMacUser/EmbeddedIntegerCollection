@@ -76,6 +76,7 @@ func basicCollections(
       : .leastSignificantFirst
   )
   #expect(AnySequence(collection).elementsEqual(expected))
+  #expect(!collection.isEmpty)
 
   // MutableCollection
   let sentinelValue: UInt8 = 0x9F
