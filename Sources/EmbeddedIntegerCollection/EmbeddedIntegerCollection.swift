@@ -133,6 +133,7 @@ extension EmbeddedIntegerCollection: BidirectionalCollection, MutableCollection
   // going downward is to use the negatives of the offsets.
   public typealias Index = Int
 
+  @inlinable
   public var startIndex: Index {
     switch initialBitRange {
     case .mostSignificantFirst:
@@ -141,6 +142,7 @@ extension EmbeddedIntegerCollection: BidirectionalCollection, MutableCollection
       0
     }
   }
+  @inlinable
   public var endIndex: Index {
     switch initialBitRange {
     case .mostSignificantFirst:
@@ -160,10 +162,12 @@ extension EmbeddedIntegerCollection: BidirectionalCollection, MutableCollection
     }
   }
 
+  @inlinable
   public func index(after i: Index) -> Index {
     return i + Element.bitWidth
   }
 
+  @inlinable
   public func index(before i: Index) -> Index {
     return i - Element.bitWidth
   }
