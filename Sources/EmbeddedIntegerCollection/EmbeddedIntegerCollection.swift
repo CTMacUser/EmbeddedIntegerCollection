@@ -87,6 +87,8 @@ public enum EmbeddedIteratorDirection: Codable, Sendable, BitwiseCopyable {
   case leastSignificantFirst
 }
 
+extension EmbeddedIteratorDirection: CaseIterable {}
+
 // MARK: Base Behaviors
 
 extension EmbeddedIntegerCollection: Equatable, Hashable {}
