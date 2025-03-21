@@ -78,15 +78,26 @@ func basicCollections(
   #expect(AnySequence(collection).elementsEqual(expected))
   #expect(!collection.isEmpty)
 
+  // In-place index updating
+  var dummy = collection.startIndex
+  try #require(expected.count >= 2)  // `collection.count` saved for RAC tests
+
+  let secondIndex = collection.index(after: dummy)
+  collection.formIndex(after: &dummy)
+  #expect(dummy == secondIndex)
+
   // MutableCollection
   let sentinelValue: UInt8 = 0x9F
-  try #require(expected.count >= 2 && expected[1] != sentinelValue)
+  try #require(expected[1] != sentinelValue)
 
-  let secondIndex = collection.index(after: collection.startIndex)
   let newExpected = [expected.first!] + [sentinelValue] + expected[2...]
   collection[secondIndex] = sentinelValue
   #expect(collection.elementsEqual(newExpected))
 
   // BidirectionalCollection
   #expect(collection.reversed().elementsEqual(newExpected.reversed()))
+
+  #expect(collection.index(before: dummy) == collection.startIndex)
+  collection.formIndex(before: &dummy)
+  #expect(dummy == collection.startIndex)
 }

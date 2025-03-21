@@ -166,10 +166,18 @@ extension EmbeddedIntegerCollection: BidirectionalCollection, MutableCollection
   public func index(after i: Index) -> Index {
     return i + Element.bitWidth
   }
+  @inlinable
+  public func formIndex(after i: inout Int) {
+    i += Element.bitWidth
+  }
 
   @inlinable
   public func index(before i: Index) -> Index {
     return i - Element.bitWidth
+  }
+  @inlinable
+  public func formIndex(before i: inout Int) {
+    i -= Element.bitWidth
   }
 }
 
