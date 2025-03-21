@@ -118,8 +118,7 @@ extension EmbeddedIntegerCollection: CustomDebugStringConvertible {
 
 // MARK: Collection Support
 
-extension EmbeddedIntegerCollection: BidirectionalCollection, MutableCollection
-{
+extension EmbeddedIntegerCollection: RandomAccessCollection, MutableCollection {
   // Each embedded element can be located by a bit range within
   // the wrapping integer.
   // All the elements use the same bit range width,
@@ -134,6 +133,13 @@ extension EmbeddedIntegerCollection: BidirectionalCollection, MutableCollection
   // the solution when starting from the highest-order bits and
   // going downward is to use the negatives of the offsets.
   public typealias Index = Int
+
+  // When this type was upgraded from `BidirectionalCollection` to
+  // `RandomAccessCollection`,
+  // the default `Indices` type changed,
+  // but its implementation gave incompatible results,
+  // so a custom type is required.
+  public typealias Indices = EmbeddedIntegerCollectionIndices
 
   @inlinable
   public var startIndex: Index {
@@ -165,23 +171,174 @@ extension EmbeddedIntegerCollection: BidirectionalCollection, MutableCollection
   }
 
   @inlinable
+  public var indices: Indices {
+    .init(every: Element.bitWidth, over: startIndex..<endIndex)
+  }
+
+  @inlinable
   public func index(after i: Index) -> Index {
-    return i + Element.bitWidth
+    return indices.index(after: i)
   }
   @inlinable
   public func formIndex(after i: inout Int) {
-    i += Element.bitWidth
+    indices.formIndex(after: &i)
   }
 
   @inlinable
   public func index(before i: Index) -> Index {
-    return i - Element.bitWidth
+    return indices.index(before: i)
   }
   @inlinable
   public func formIndex(before i: inout Int) {
-    i -= Element.bitWidth
+    indices.formIndex(before: &i)
+  }
+
+  @inlinable
+  public func index(_ i: Index, offsetBy distance: Int) -> Index {
+    return indices.index(i, offsetBy: distance)
+  }
+  @inlinable
+  public func index(_ i: Index, offsetBy distance: Int, limitedBy limit: Index)
+    -> Index?
+  {
+    return indices.index(i, offsetBy: distance, limitedBy: limit)
+  }
+  @inlinable
+  public func distance(from start: Index, to end: Index) -> Int {
+    return indices.distance(from: start, to: end)
   }
 }
+
+/// The `Indices` type for all `EmbeddedIntegerCollection` instantiations.
+public struct EmbeddedIntegerCollectionIndices: RandomAccessCollection {
+  /// The spacing between elements/indices.
+  @usableFromInline
+  let stride: Int
+
+  public let startIndex: Int
+  public let endIndex: Int
+
+  /// Creates an index bundle over the given range,
+  /// where the valid index values have the given spacing.
+  ///
+  /// - Precondition: Both bounds of `range` are multiples of `spacing`.
+  ///   The value of `spacing` must be positive.
+  ///
+  /// - Parameters:
+  ///   - spacing: The difference between the values of consecutive indices.
+  ///   - range: The half-open bounds of this index bundle,
+  ///     where the starting bound will be vended as the first value,
+  ///     and no returned value will meet or exceed the ending bound.
+  @inlinable
+  init(every spacing: Int, over range: Range<Int>) {
+    stride = spacing
+    startIndex = range.lowerBound
+    endIndex = range.upperBound
+  }
+
+  @inlinable
+  public subscript(position: Int) -> Int {
+    return position
+  }
+  @inlinable
+  public subscript(bounds: Range<Int>) -> Self {
+    return .init(every: stride, over: bounds)
+  }
+
+  @inlinable
+  public func makeIterator() -> StrideToIterator<Int> {
+    return Swift.stride(from: startIndex, to: endIndex, by: stride)
+      .makeIterator()
+  }
+
+  @inlinable
+  public func index(after i: Int) -> Int {
+    return i + stride
+  }
+  @inlinable
+  public func formIndex(after i: inout Int) {
+    i += stride
+  }
+
+  @inlinable
+  public func index(before i: Int) -> Int {
+    return i - stride
+  }
+  @inlinable
+  public func formIndex(before i: inout Int) {
+    i -= stride
+  }
+
+  @inlinable
+  public func index(_ i: Int, offsetBy distance: Int) -> Int {
+    return i + distance * stride
+  }
+  public
+    func index(_ i: Int, offsetBy distance: Int, limitedBy limit: Int) -> Int?
+  {
+    // The next two guards make the last one easier.
+    guard distance != 0 else { return i }
+    guard limit != i else { return nil }
+    // Do `i + distance * stride` in a way that doesn't trap overflow.
+    guard
+      case let (bitDistance, overflow1) = distance.multipliedReportingOverflow(
+        by: stride),
+      case let (rawResult, overflow2) = i.addingReportingOverflow(bitDistance),
+      !overflow1 && !overflow2
+    else {
+      // The magnitude of `distance` is WAY too big.
+      return nil
+    }
+    // The `limit` does not apply if traversal went in the opposite direction.
+    guard (distance < 0) == (limit < i) else { return rawResult }
+
+    // Return the result if it doesn't blow past `limit`.
+    if distance < 0 {
+      return rawResult < limit ? nil : rawResult
+    } else {
+      return limit < rawResult ? nil : rawResult
+    }
+  }
+  @inlinable
+  public func distance(from start: Int, to end: Int) -> Int {
+    return (end - start) / stride
+  }
+
+  @inlinable
+  public var indices: Self { return self }
+
+  public func _copyToContiguousArray() -> ContiguousArray<Int> {
+    return .init(unsafeUninitializedCapacity: count) {
+      buffer, initializedCount in
+      for (sourceIndex, bufferIndex) in zip(indices, buffer.indices) {
+        buffer.initializeElement(at: bufferIndex, to: sourceIndex)
+        initializedCount += 1
+      }
+    }
+  }
+
+  @inlinable
+  public func _customContainsEquatableElement(_ element: Int) -> Bool? {
+    return .some(
+      startIndex..<endIndex ~= element
+        && (element - startIndex).isMultiple(of: stride)
+    )
+  }
+  @inlinable
+  public func _customIndexOfEquatableElement(_ element: Int) -> Int?? {
+    return .some(
+      _customContainsEquatableElement(element)! ? .some(element) : .none
+    )
+  }
+  @inlinable
+  public func _customLastIndexOfEquatableElement(_ element: Int) -> Int?? {
+    return _customIndexOfEquatableElement(element)
+  }
+}
+
+extension EmbeddedIntegerCollectionIndices: Equatable, Hashable, Codable,
+  Sendable, BitwiseCopyable
+{}
 
 // MARK: - Bit Manipulation Helpers
 
