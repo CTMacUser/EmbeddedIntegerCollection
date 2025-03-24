@@ -170,6 +170,11 @@ extension EmbeddedIntegerCollection: RandomAccessCollection, MutableCollection {
     }
   }
 
+  public mutating func swapAt(_ i: Int, _ j: Int) {
+    let flipMask = Wrapped(self[i] ^ self[j])
+    word ^= flipMask << abs(i) | flipMask << abs(j)
+  }
+
   @inlinable
   public var indices: Indices {
     .init(every: Element.bitWidth, over: startIndex..<endIndex)

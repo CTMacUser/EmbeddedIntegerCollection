@@ -197,3 +197,29 @@ func moreIndexChecks(_ startingBitRange: EmbeddedIteratorDirection) async throws
   }
   #expect(manualIndices.elementsEqual(collectionIndices))
 }
+
+@Test("Element swapping", arguments: EmbeddedIteratorDirection.allCases)
+func elementSwap(_ startingBitRange: EmbeddedIteratorDirection) async throws {
+  var collection = EmbeddedIntegerCollection<UInt32, UInt8>(
+    iteratingFrom: startingBitRange
+  )
+  let firstIndex = collection.startIndex
+  let secondIndex = collection.index(after: firstIndex)
+  let thirdIndex = collection.index(after: secondIndex)
+  let fourthIndex = collection.index(after: thirdIndex)
+  assert(collection.index(after: fourthIndex) == collection.endIndex)
+  collection[firstIndex] = 0x40
+  collection[secondIndex] = 0x41
+  collection[thirdIndex] = 0x42
+  collection[fourthIndex] = 0x43
+
+  #expect(collection.elementsEqual([0x40, 0x41, 0x42, 0x43]))
+  collection.swapAt(secondIndex, secondIndex)
+  #expect(collection.elementsEqual([0x40, 0x41, 0x42, 0x43]))
+  collection.swapAt(firstIndex, thirdIndex)
+  #expect(collection.elementsEqual([0x42, 0x41, 0x40, 0x43]))
+  collection.swapAt(firstIndex, thirdIndex)
+  #expect(collection.elementsEqual([0x40, 0x41, 0x42, 0x43]))
+  collection.swapAt(fourthIndex, secondIndex)
+  #expect(collection.elementsEqual([0x40, 0x43, 0x42, 0x41]))
+}
