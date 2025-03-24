@@ -223,3 +223,58 @@ func elementSwap(_ startingBitRange: EmbeddedIteratorDirection) async throws {
   collection.swapAt(fourthIndex, secondIndex)
   #expect(collection.elementsEqual([0x40, 0x43, 0x42, 0x41]))
 }
+
+@Test(
+  "Arbitrary sequence reading",
+  arguments: EmbeddedIteratorDirection.allCases
+)
+func sequenceInitialization(
+  _ startingBitRange: EmbeddedIteratorDirection
+) async throws {
+  typealias Collection = EmbeddedIntegerCollection<UInt32, UInt8>
+  let normalFullCollection = try #require(
+    Collection(
+      readingFrom: [0x40, 0x41, 0x42, 0x43],
+      requireEverythingRead: true,
+      fillingFrom: startingBitRange
+    )
+  )
+  #expect(normalFullCollection.elementsEqual(0x40...0x43))
+
+  let normalPrefixCollection = try #require(
+    Collection(
+      readingFrom: [0x40, 0x41, 0x42, 0x43],
+      requireEverythingRead: false,
+      fillingFrom: startingBitRange
+    )
+  )
+  #expect(normalPrefixCollection.elementsEqual(0x40...0x43))
+
+  let excessPrefixCollection = try #require(
+    Collection(
+      readingFrom: [0x40, 0x41, 0x42, 0x43, 0x44],
+      requireEverythingRead: false,
+      fillingFrom: startingBitRange
+    )
+  )
+  let overfullCollection = Collection(
+    readingFrom: [0x40, 0x41, 0x42, 0x43, 0x44],
+    requireEverythingRead: true,
+    fillingFrom: startingBitRange
+  )
+  #expect(excessPrefixCollection.elementsEqual(0x40...0x43))
+  #expect(overfullCollection == nil)
+
+  let shortPrefixCollection = Collection(
+    readingFrom: [0x40],
+    requireEverythingRead: false,
+    fillingFrom: startingBitRange
+  )
+  let shortFullCollection = Collection(
+    readingFrom: [0x40],
+    requireEverythingRead: true,
+    fillingFrom: startingBitRange
+  )
+  #expect(shortPrefixCollection == nil)
+  #expect(shortFullCollection == nil)
+}

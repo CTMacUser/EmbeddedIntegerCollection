@@ -345,6 +345,99 @@ extension EmbeddedIntegerCollectionIndices: Equatable, Hashable, Codable,
   Sendable, BitwiseCopyable
 {}
 
+// MARK: More Initializers
+
+extension EmbeddedIntegerCollection {
+  /// Creates a collection wrapping an instance of the given integer type,
+  /// where the integer's initial value embeds elements taken from
+  /// the given iterator's virtual sequence,
+  /// notating which bit range cap stores the first element.
+  ///
+  /// - Precondition: The bit length of `Wrapped` needs to be a multiple of
+  ///   the bit length of `Element`.
+  ///
+  /// - Parameters:
+  ///   - iterator: The source for the embedded elements' values.
+  ///   - type: A metatype specifier for the `Wrapped` type.
+  ///     It does not need to be specified if the surrounding context already
+  ///     locks it in.
+  ///   - bitRange: Whether the collection's first element should be embedded at
+  ///     the most- or least-significant bit range of the wrapping integer.
+  /// - Postcondition: This initializer fails if the `iterator` cannot
+  ///   supply enough elements.
+  ///   The count of elements extracted from the `iterator` will be the
+  ///   minimum between its virtual sequence's length and the number of
+  ///   elements supported by this collection type.
+  @inlinable
+  public init?<T: IteratorProtocol<Element>>(
+    extractingFrom iterator: inout T,
+    embeddingInto type: Wrapped.Type = Wrapped.self,
+    fillingFrom bitRange: EmbeddedIteratorDirection
+  ) {
+    self.init(iteratingFrom: bitRange)
+
+    // Fill up the wrapping word from the most-significant element down.
+    var remainingElements = count
+    while remainingElements > 0, let nextEmbeddedElement = iterator.next() {
+      word <<= Element.bitWidth
+      word |= Wrapped(nextEmbeddedElement)
+      remainingElements -= 1
+    }
+    guard remainingElements == 0 else { return nil }
+
+    // Flip the elements if the starting bit range is wrong.
+    if bitRange == .leastSignificantFirst, !isEmpty {
+      var first = startIndex
+      var last = index(before: endIndex)
+      while first < last {
+        swapAt(first, last)
+        formIndex(after: &first)
+        formIndex(before: &last)
+      }
+    }
+  }
+
+  /// Creates a collection wrapping an instance of the given integer type,
+  /// where the integer's initial value embeds elements taken from
+  /// the prefix of the given sequence,
+  /// notating which bit range cap stores the first element.
+  ///
+  /// - Precondition: The bit length of `Wrapped` needs to be a multiple of
+  ///   the bit length of `Element`.
+  ///
+  /// If access to the elements of the `sequence` after what's needed to
+  /// fill this collection is required,
+  /// use the iterator-based `init(extractingFrom:embeddingInto:fillingFrom:)`
+  /// instead.
+  ///
+  /// - Parameters:
+  ///   - sequence: The source for the embedded elements' values.
+  ///   - type: A metatype specifier for the `Wrapped` type.
+  ///     It does not need to be specified if the surrounding context already
+  ///     locks it in.
+  ///   - readAll: Whether every element of the `sequence` needs to
+  ///     be copied into this collection (i.e. not a strict prefix).
+  ///   - bitRange: Whether the collection's first element should be embedded at
+  ///     the most- or least-significant bit range of the wrapping integer.
+  /// - Postcondition: This initializer fails if the `sequence` cannot
+  ///   supply enough elements.
+  ///   It also fails if `readAll` is `true` while the `sequence` has extra
+  ///   elements after filling this collection.
+  @inlinable
+  public init?<T: Sequence<Element>>(
+    readingFrom sequence: T,
+    embeddingInto type: Wrapped.Type = Wrapped.self,
+    requireEverythingRead readAll: Bool,
+    fillingFrom bitRange: EmbeddedIteratorDirection
+  ) {
+    var iterator = sequence.makeIterator()
+    self.init(
+      extractingFrom: &iterator, embeddingInto: type, fillingFrom: bitRange
+    )
+    guard !readAll || iterator.next() == nil else { return nil }
+  }
+}
+
 // MARK: - Bit Manipulation Helpers
 
 extension EmbeddedIntegerCollection {
