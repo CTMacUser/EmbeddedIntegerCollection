@@ -100,7 +100,22 @@ extension EmbeddedIntegerCollection: Sendable where Wrapped: Sendable {}
 extension EmbeddedIntegerCollection: BitwiseCopyable
 where Wrapped: BitwiseCopyable {}
 
-// MARK: Debugging
+// MARK: Printing
+
+extension EmbeddedIntegerCollection: CustomStringConvertible {
+  public var description: String {
+    var result = "["
+    print(
+      lazy.map {
+        String($0, radix: 16, uppercase: true)
+      }.joined(separator: ", "),
+      separator: "",
+      terminator: "",
+      to: &result
+    )
+    return result + "]"
+  }
+}
 
 extension EmbeddedIntegerCollection: CustomDebugStringConvertible {
   public var debugDescription: String {

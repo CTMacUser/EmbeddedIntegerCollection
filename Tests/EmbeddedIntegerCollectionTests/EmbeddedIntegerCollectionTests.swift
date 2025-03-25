@@ -278,3 +278,37 @@ func sequenceInitialization(
   #expect(shortPrefixCollection == nil)
   #expect(shortFullCollection == nil)
 }
+
+@Test(
+  "Normal Printing",
+  arguments: zip(
+    [
+      (0, true),
+      (0, false),
+      (.max, true),
+      (.max, false),
+      (0x4041_4243, true),
+      (0x4041_4243, false),
+    ],
+    [
+      "[0, 0, 0, 0]",
+      "[0, 0, 0, 0]",
+      "[FF, FF, FF, FF]",
+      "[FF, FF, FF, FF]",
+      "[40, 41, 42, 43]",
+      "[43, 42, 41, 40]",
+    ]
+  )
+)
+func normalPrint(_ input: (base: UInt32, isBigEndian: Bool), expected: String)
+  async throws
+{
+  let collection = EmbeddedIntegerCollection(
+    embedding: UInt8.self,
+    within: input.base,
+    iteratingFrom: input.isBigEndian
+      ? .mostSignificantFirst
+      : .leastSignificantFirst
+  )
+  #expect(String(describing: collection) == expected)
+}
