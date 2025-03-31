@@ -312,3 +312,86 @@ func normalPrint(_ input: (base: UInt32, isBigEndian: Bool), expected: String)
   )
   #expect(String(describing: collection) == expected)
 }
+
+@Test("Mutate contiguous storage")
+func mutateContiguousStorage() async throws {
+  // No usage with elements aren't raw octets.
+  var nonOctets = EmbeddedIntegerCollection(
+    embedding: UInt16.self, within: 0x1234_5678_9ABC_DEF0 as UInt64,
+    iteratingFrom: .mostSignificantFirst
+  )
+  let nonOctetCount = nonOctets.withContiguousMutableStorageIfAvailable(
+    flipAndCount(_:)
+  )
+  #expect(nonOctetCount == nil)
+
+  // Octet elements
+  var bigOctets = EmbeddedIntegerCollection(
+    embedding: UInt8.self, within: 0x0123_4567 as UInt32,
+    iteratingFrom: .mostSignificantFirst
+  )
+  #expect(bigOctets.word == 0x0123_4567)
+  #expect(bigOctets.elementsEqual([0x01, 0x23, 0x45, 0x67]))
+
+  let bigOctetCount = bigOctets.withContiguousMutableStorageIfAvailable(
+    flipAndCount(_:)
+  )
+  #expect(bigOctetCount == 4)
+  #expect(bigOctets.word == 0xFEDC_BA98)
+  #expect(bigOctets.elementsEqual([0xFE, 0xDC, 0xBA, 0x98]))
+
+  var littleOctets = EmbeddedIntegerCollection(
+    embedding: UInt8.self, within: 0x0123_4567 as UInt32,
+    iteratingFrom: .leastSignificantFirst
+  )
+  #expect(littleOctets.word == 0x0123_4567)
+  #expect(littleOctets.elementsEqual([0x67, 0x45, 0x23, 0x01]))
+
+  let littleOctetCount = littleOctets.withContiguousMutableStorageIfAvailable(
+    flipAndCount(_:)
+  )
+  #expect(littleOctetCount == 4)
+  #expect(littleOctets.word == 0xFEDC_BA98)
+  #expect(littleOctets.elementsEqual([0x98, 0xBA, 0xDC, 0xFE]))
+}
+
+/// Return the given collection's length after mutating each element.
+private func flipAndCount<T: MutableCollection>(_ collection: inout T) -> Int
+where T.Element: BinaryInteger {
+  for i in collection.indices {
+    collection[i] = ~collection[i]
+  }
+  return collection.count
+}
+
+@Test(
+  "Inspect contiguous storage",
+  arguments: [0, 0x0123_4567, 0x89AB_CDEF], [false, true]
+)
+func inspectContiguousStorage(wrapped: UInt32, isBigEndian: Bool) async throws {
+  let collection = EmbeddedIntegerCollection(
+    embedding: UInt8.self,
+    within: wrapped,
+    iteratingFrom: isBigEndian ? .mostSignificantFirst : .leastSignificantFirst
+  )
+  let bitsCount = try #require(
+    collection.withContiguousStorageIfAvailable {
+      return $0.map(\.nonzeroBitCount).reduce(0, +)
+    }
+  )
+  #expect(bitsCount == collection.word.nonzeroBitCount)
+}
+
+@Test("Inspecting non-octet contiguous storage")
+func nonOctetInspectContiguousStorage() async throws {
+  let collection = EmbeddedIntegerCollection(
+    embedding: UInt16.self,
+    within: 0x0123_4567 as UInt32,
+    iteratingFrom: .leastSignificantFirst
+  )
+  #expect(
+    collection.withContiguousStorageIfAvailable {
+      return $0.map(\.nonzeroBitCount).reduce(0, +)
+    } == nil
+  )
+}

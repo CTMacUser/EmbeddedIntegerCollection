@@ -227,6 +227,49 @@ extension EmbeddedIntegerCollection: RandomAccessCollection, MutableCollection {
   public func distance(from start: Index, to end: Index) -> Int {
     return indices.distance(from: start, to: end)
   }
+
+  public func withContiguousStorageIfAvailable<R>(
+    _ body: (UnsafeBufferPointer<Element>) throws -> R
+  ) rethrows -> R? {
+    var copy = self
+    guard
+      let result = try copy.withContiguousMutableStorageIfAvailable({ buffer in
+        try body(.init(buffer))
+      })
+    else { return nil }
+
+    assert(copy.word == word)  // Check against accidental mutation
+    return result
+  }
+  public mutating func withContiguousMutableStorageIfAvailable<R>(
+    _ body: (inout UnsafeMutableBufferPointer<Element>) throws -> R
+  ) rethrows -> R? {
+    guard Element.self is UInt8.Type else { return nil }
+    guard word is _ExpressibleByBuiltinIntegerLiteral else { return nil }
+
+    var storage =
+      switch initialBitRange {
+      case .mostSignificantFirst:
+        word.bigEndian
+      case .leastSignificantFirst:
+        word.littleEndian
+      }
+    defer {
+      word =
+        switch initialBitRange {
+        case .mostSignificantFirst:
+          Wrapped(bigEndian: storage)
+        case .leastSignificantFirst:
+          Wrapped(littleEndian: storage)
+        }
+    }
+    return try withUnsafeMutableBytes(of: &storage) { rawBuffer in
+      return try rawBuffer.withMemoryRebound(to: Element.self) { buffer in
+        var bufferCopy = buffer
+        return try body(&bufferCopy)
+      }
+    }
+  }
 }
 
 /// The `Indices` type for all `EmbeddedIntegerCollection` instantiations.
