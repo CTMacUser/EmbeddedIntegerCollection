@@ -23,7 +23,8 @@ func debugPrint(_ input: (base: UInt64, isBigEndian: Bool), expected: String)
   async throws
 {
   let collection = EmbeddedIntegerCollection(
-    embedding: UInt16.self, within: input.base,
+    embedding: UInt16.self,
+    within: input.base,
     iteratingFrom: input.isBigEndian
       ? .mostSignificantFirst
       : .leastSignificantFirst
@@ -36,19 +37,27 @@ func debugPrint(_ input: (base: UInt64, isBigEndian: Bool), expected: String)
 @Test("Repeating-element initializer")
 func repeatingInitializer() async throws {
   let collection1 = EmbeddedIntegerCollection.init(
-    repeating: 0 as UInt16, embeddedIn: UInt64.self,
-    iteratingFrom: .mostSignificantFirst)
+    repeating: 0 as UInt16,
+    embeddedIn: UInt64.self,
+    iteratingFrom: .mostSignificantFirst
+  )
   let collection2 = EmbeddedIntegerCollection(
-    embedding: UInt16.self, within: 0 as UInt64,
-    iteratingFrom: .mostSignificantFirst)
+    embedding: UInt16.self,
+    within: 0 as UInt64,
+    iteratingFrom: .mostSignificantFirst
+  )
   #expect(collection1 == collection2)
 
   let collection3 = EmbeddedIntegerCollection(
-    embedding: UInt8.self, within: 0x6F6F_6F6F as UInt32,
-    iteratingFrom: .leastSignificantFirst)
+    embedding: UInt8.self,
+    within: 0x6F6F_6F6F as UInt32,
+    iteratingFrom: .leastSignificantFirst
+  )
   let collection4 = EmbeddedIntegerCollection(
-    repeating: 0x6F as UInt8, embeddedIn: UInt32.self,
-    iteratingFrom: .leastSignificantFirst)
+    repeating: 0x6F as UInt8,
+    embeddedIn: UInt32.self,
+    iteratingFrom: .leastSignificantFirst
+  )
   #expect(collection3 == collection4)
 }
 
@@ -66,11 +75,13 @@ func repeatingInitializer() async throws {
   )
 )
 func basicCollections(
-  _ input: (base: UInt32, isBigEndian: Bool), expected: [UInt8]
+  _ input: (base: UInt32, isBigEndian: Bool),
+  expected: [UInt8]
 ) async throws {
   // Sequence (and indirectly Collection)
   var collection = EmbeddedIntegerCollection(
-    embedding: UInt8.self, within: input.base,
+    embedding: UInt8.self,
+    within: input.base,
     iteratingFrom: input.isBigEndian
       ? .mostSignificantFirst
       : .leastSignificantFirst
@@ -143,7 +154,9 @@ func basicCollections(
 func moreIndexChecks(_ startingBitRange: EmbeddedIteratorDirection) async throws
 {
   let collection = EmbeddedIntegerCollection(
-    embedding: UInt8.self, within: 0 as UInt64, iteratingFrom: startingBitRange
+    embedding: UInt8.self,
+    within: 0 as UInt64,
+    iteratingFrom: startingBitRange
   )
   let collectionIndices = collection.indices
 
@@ -177,7 +190,9 @@ func moreIndexChecks(_ startingBitRange: EmbeddedIteratorDirection) async throws
   // Over-sized distances
   #expect(
     collection.index(
-      goodIndex, offsetBy: .max, limitedBy: collection.endIndex
+      goodIndex,
+      offsetBy: .max,
+      limitedBy: collection.endIndex
     ) == nil
   )
 
@@ -317,7 +332,8 @@ func normalPrint(_ input: (base: UInt32, isBigEndian: Bool), expected: String)
 func mutateContiguousStorage() async throws {
   // No usage with elements aren't raw octets.
   var nonOctets = EmbeddedIntegerCollection(
-    embedding: UInt16.self, within: 0x1234_5678_9ABC_DEF0 as UInt64,
+    embedding: UInt16.self,
+    within: 0x1234_5678_9ABC_DEF0 as UInt64,
     iteratingFrom: .mostSignificantFirst
   )
   let nonOctetCount = nonOctets.withContiguousMutableStorageIfAvailable(
@@ -327,7 +343,8 @@ func mutateContiguousStorage() async throws {
 
   // Octet elements
   var bigOctets = EmbeddedIntegerCollection(
-    embedding: UInt8.self, within: 0x0123_4567 as UInt32,
+    embedding: UInt8.self,
+    within: 0x0123_4567 as UInt32,
     iteratingFrom: .mostSignificantFirst
   )
   #expect(bigOctets.word == 0x0123_4567)
@@ -341,7 +358,8 @@ func mutateContiguousStorage() async throws {
   #expect(bigOctets.elementsEqual([0xFE, 0xDC, 0xBA, 0x98]))
 
   var littleOctets = EmbeddedIntegerCollection(
-    embedding: UInt8.self, within: 0x0123_4567 as UInt32,
+    embedding: UInt8.self,
+    within: 0x0123_4567 as UInt32,
     iteratingFrom: .leastSignificantFirst
   )
   #expect(littleOctets.word == 0x0123_4567)
@@ -366,7 +384,8 @@ where T.Element: BinaryInteger {
 
 @Test(
   "Inspect contiguous storage",
-  arguments: [0, 0x0123_4567, 0x89AB_CDEF], [false, true]
+  arguments: [0, 0x0123_4567, 0x89AB_CDEF],
+  [false, true]
 )
 func inspectContiguousStorage(wrapped: UInt32, isBigEndian: Bool) async throws {
   let collection = EmbeddedIntegerCollection(

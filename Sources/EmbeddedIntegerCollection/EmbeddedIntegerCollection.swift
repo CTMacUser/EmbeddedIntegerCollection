@@ -69,7 +69,8 @@ where
     iteratingFrom bitRange: EmbeddedIteratorDirection
   ) {
     self.init(
-      within: Wrapped(element) &* Self.allEmbeddedOnes, iteratingFrom: bitRange
+      within: Wrapped(element) &* Self.allEmbeddedOnes,
+      iteratingFrom: bitRange
     )
   }
 }
@@ -345,7 +346,8 @@ public struct EmbeddedIntegerCollectionIndices: RandomAccessCollection {
     // Do `i + distance * stride` in a way that doesn't trap overflow.
     guard
       case let (bitDistance, overflow1) = distance.multipliedReportingOverflow(
-        by: stride),
+        by: stride
+      ),
       case let (rawResult, overflow2) = i.addingReportingOverflow(bitDistance),
       !overflow1 && !overflow2
     else {
@@ -372,7 +374,8 @@ public struct EmbeddedIntegerCollectionIndices: RandomAccessCollection {
 
   public func _copyToContiguousArray() -> ContiguousArray<Int> {
     return .init(unsafeUninitializedCapacity: count) {
-      buffer, initializedCount in
+      buffer,
+      initializedCount in
       for (sourceIndex, bufferIndex) in zip(indices, buffer.indices) {
         buffer.initializeElement(at: bufferIndex, to: sourceIndex)
         initializedCount += 1
@@ -490,7 +493,9 @@ extension EmbeddedIntegerCollection {
   ) {
     var iterator = sequence.makeIterator()
     self.init(
-      extractingFrom: &iterator, embeddingInto: type, fillingFrom: bitRange
+      extractingFrom: &iterator,
+      embeddingInto: type,
+      fillingFrom: bitRange
     )
     guard !readAll || iterator.next() == nil else { return nil }
   }
