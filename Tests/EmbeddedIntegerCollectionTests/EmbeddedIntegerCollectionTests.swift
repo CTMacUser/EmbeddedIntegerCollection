@@ -149,9 +149,10 @@ func basicCollections(
 
 @Test(
   "More random-access index checks",
-  arguments: EmbeddedIteratorDirection.allCases
+  arguments: EmbeddedIterationDirection.allCases
 )
-func moreIndexChecks(_ startingBitRange: EmbeddedIteratorDirection) async throws
+func moreIndexChecks(_ startingBitRange: EmbeddedIterationDirection)
+  async throws
 {
   let collection = EmbeddedIntegerCollection(
     embedding: UInt8.self,
@@ -213,8 +214,8 @@ func moreIndexChecks(_ startingBitRange: EmbeddedIteratorDirection) async throws
   #expect(manualIndices.elementsEqual(collectionIndices))
 }
 
-@Test("Element swapping", arguments: EmbeddedIteratorDirection.allCases)
-func elementSwap(_ startingBitRange: EmbeddedIteratorDirection) async throws {
+@Test("Element swapping", arguments: EmbeddedIterationDirection.allCases)
+func elementSwap(_ startingBitRange: EmbeddedIterationDirection) async throws {
   var collection = EmbeddedIntegerCollection<UInt32, UInt8>(
     iteratingFrom: startingBitRange
   )
@@ -241,10 +242,10 @@ func elementSwap(_ startingBitRange: EmbeddedIteratorDirection) async throws {
 
 @Test(
   "Arbitrary sequence reading",
-  arguments: EmbeddedIteratorDirection.allCases
+  arguments: EmbeddedIterationDirection.allCases
 )
 func sequenceInitialization(
-  _ startingBitRange: EmbeddedIteratorDirection
+  _ startingBitRange: EmbeddedIterationDirection
 ) async throws {
   typealias Collection = EmbeddedIntegerCollection<UInt32, UInt8>
   let normalFullCollection = try #require(

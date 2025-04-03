@@ -11,7 +11,7 @@ where
   /// The containing integer.
   public var container: Wrapped
   /// Which sub-word is to be treated as the first element.
-  public let endianness: EmbeddedIteratorDirection
+  public let endianness: EmbeddedIterationDirection
 
   /// Creates a collection vending elements of the given type embedded in
   /// the given value,
@@ -38,7 +38,7 @@ where
   public init(
     embedding type: Element.Type = Element.self,
     within container: Wrapped = 0,
-    iteratingFrom bitRange: EmbeddedIteratorDirection
+    iteratingFrom bitRange: EmbeddedIterationDirection
   ) {
     self.container = container
     endianness = bitRange
@@ -64,7 +64,7 @@ where
   public init(
     repeating element: Element,
     embeddedIn type: Wrapped.Type = Wrapped.self,
-    iteratingFrom bitRange: EmbeddedIteratorDirection
+    iteratingFrom bitRange: EmbeddedIterationDirection
   ) {
     self.init(
       within: Wrapped(element) &* Self.allEmbeddedOnes,
@@ -75,7 +75,7 @@ where
 
 /// Indicator for which direction embedded integer elements should be
 /// read within their containing integer.
-public enum EmbeddedIteratorDirection: Codable, Sendable, BitwiseCopyable {
+public enum EmbeddedIterationDirection: Codable, Sendable, BitwiseCopyable {
   /// Use the highest sub-word as the first element.
   ///
   /// Subsequent elements will be at progressively lower bit offsets.
@@ -86,7 +86,7 @@ public enum EmbeddedIteratorDirection: Codable, Sendable, BitwiseCopyable {
   case leastSignificantFirst
 }
 
-extension EmbeddedIteratorDirection: CaseIterable {}
+extension EmbeddedIterationDirection: CaseIterable {}
 
 // MARK: Base Behaviors
 
@@ -431,7 +431,7 @@ extension EmbeddedIntegerCollection {
   public init?<T: IteratorProtocol<Element>>(
     extractingFrom iterator: inout T,
     embeddingInto type: Wrapped.Type = Wrapped.self,
-    fillingFrom bitRange: EmbeddedIteratorDirection
+    fillingFrom bitRange: EmbeddedIterationDirection
   ) {
     self.init(iteratingFrom: bitRange)
 
@@ -487,7 +487,7 @@ extension EmbeddedIntegerCollection {
     readingFrom sequence: T,
     embeddingInto type: Wrapped.Type = Wrapped.self,
     requireEverythingRead readAll: Bool,
-    fillingFrom bitRange: EmbeddedIteratorDirection
+    fillingFrom bitRange: EmbeddedIterationDirection
   ) {
     var iterator = sequence.makeIterator()
     self.init(
