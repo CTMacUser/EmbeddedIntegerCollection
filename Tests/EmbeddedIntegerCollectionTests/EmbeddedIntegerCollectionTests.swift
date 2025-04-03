@@ -347,14 +347,14 @@ func mutateContiguousStorage() async throws {
     within: 0x0123_4567 as UInt32,
     iteratingFrom: .mostSignificantFirst
   )
-  #expect(bigOctets.word == 0x0123_4567)
+  #expect(bigOctets.container == 0x0123_4567)
   #expect(bigOctets.elementsEqual([0x01, 0x23, 0x45, 0x67]))
 
   let bigOctetCount = bigOctets.withContiguousMutableStorageIfAvailable(
     flipAndCount(_:)
   )
   #expect(bigOctetCount == 4)
-  #expect(bigOctets.word == 0xFEDC_BA98)
+  #expect(bigOctets.container == 0xFEDC_BA98)
   #expect(bigOctets.elementsEqual([0xFE, 0xDC, 0xBA, 0x98]))
 
   var littleOctets = EmbeddedIntegerCollection(
@@ -362,14 +362,14 @@ func mutateContiguousStorage() async throws {
     within: 0x0123_4567 as UInt32,
     iteratingFrom: .leastSignificantFirst
   )
-  #expect(littleOctets.word == 0x0123_4567)
+  #expect(littleOctets.container == 0x0123_4567)
   #expect(littleOctets.elementsEqual([0x67, 0x45, 0x23, 0x01]))
 
   let littleOctetCount = littleOctets.withContiguousMutableStorageIfAvailable(
     flipAndCount(_:)
   )
   #expect(littleOctetCount == 4)
-  #expect(littleOctets.word == 0xFEDC_BA98)
+  #expect(littleOctets.container == 0xFEDC_BA98)
   #expect(littleOctets.elementsEqual([0x98, 0xBA, 0xDC, 0xFE]))
 }
 
@@ -398,7 +398,7 @@ func inspectContiguousStorage(wrapped: UInt32, isBigEndian: Bool) async throws {
       return $0.map(\.nonzeroBitCount).reduce(0, +)
     }
   )
-  #expect(bitsCount == collection.word.nonzeroBitCount)
+  #expect(bitsCount == collection.container.nonzeroBitCount)
 }
 
 @Test("Inspecting non-octet contiguous storage")

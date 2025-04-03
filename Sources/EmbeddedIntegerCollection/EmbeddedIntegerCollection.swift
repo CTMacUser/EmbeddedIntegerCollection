@@ -9,11 +9,9 @@ where
   // be a multiple of Element.bitWidth.
 
   /// The containing integer.
-  @usableFromInline
-  var word: Wrapped
-  /// The sub-word to be treated as the first element.
-  @usableFromInline
-  let initialBitRange: EmbeddedIteratorDirection
+  public var container: Wrapped
+  /// Which sub-word is to be treated as the first element.
+  public let endianness: EmbeddedIteratorDirection
 
   /// Creates a collection vending elements of the given type embedded in
   /// the given value,
@@ -42,8 +40,8 @@ where
     within container: Wrapped = 0,
     iteratingFrom bitRange: EmbeddedIteratorDirection
   ) {
-    word = container
-    initialBitRange = bitRange
+    self.container = container
+    endianness = bitRange
   }
 
   /// Creates a collection initially vending the maximum amount copies of
@@ -121,8 +119,8 @@ extension EmbeddedIntegerCollection: CustomStringConvertible {
 extension EmbeddedIntegerCollection: CustomDebugStringConvertible {
   public var debugDescription: String {
     var result = String(describing: Self.self)
-    let hexValue = String(word, radix: 16, uppercase: true)
-    switch initialBitRange {
+    let hexValue = String(container, radix: 16, uppercase: true)
+    switch endianness {
     case .mostSignificantFirst:
       print("(*", hexValue, ")", separator: "", terminator: "", to: &result)
     case .leastSignificantFirst:
@@ -159,7 +157,7 @@ extension EmbeddedIntegerCollection: RandomAccessCollection, MutableCollection {
 
   @inlinable
   public var startIndex: Index {
-    switch initialBitRange {
+    switch endianness {
     case .mostSignificantFirst:
       Element.bitWidth - Wrapped.bitWidth
     case .leastSignificantFirst:
@@ -168,7 +166,7 @@ extension EmbeddedIntegerCollection: RandomAccessCollection, MutableCollection {
   }
   @inlinable
   public var endIndex: Index {
-    switch initialBitRange {
+    switch endianness {
     case .mostSignificantFirst:
       Element.bitWidth
     case .leastSignificantFirst:
@@ -178,17 +176,17 @@ extension EmbeddedIntegerCollection: RandomAccessCollection, MutableCollection {
 
   public subscript(position: Index) -> Element {
     get {
-      return .init(truncatingIfNeeded: word >> abs(position))
+      return .init(truncatingIfNeeded: container >> abs(position))
     }
     set {
       let flipMask = self[position] ^ newValue
-      word ^= Wrapped(flipMask) << abs(position)
+      container ^= Wrapped(flipMask) << abs(position)
     }
   }
 
   public mutating func swapAt(_ i: Int, _ j: Int) {
     let flipMask = Wrapped(self[i] ^ self[j])
-    word ^= flipMask << abs(i) | flipMask << abs(j)
+    container ^= flipMask << abs(i) | flipMask << abs(j)
   }
 
   @inlinable
@@ -239,25 +237,25 @@ extension EmbeddedIntegerCollection: RandomAccessCollection, MutableCollection {
       })
     else { return nil }
 
-    assert(copy.word == word)  // Check against accidental mutation
+    assert(copy.container == container)  // Check against accidental mutation
     return result
   }
   public mutating func withContiguousMutableStorageIfAvailable<R>(
     _ body: (inout UnsafeMutableBufferPointer<Element>) throws -> R
   ) rethrows -> R? {
     guard Element.self is UInt8.Type else { return nil }
-    guard word is _ExpressibleByBuiltinIntegerLiteral else { return nil }
+    guard container is _ExpressibleByBuiltinIntegerLiteral else { return nil }
 
     var storage =
-      switch initialBitRange {
+      switch endianness {
       case .mostSignificantFirst:
-        word.bigEndian
+        container.bigEndian
       case .leastSignificantFirst:
-        word.littleEndian
+        container.littleEndian
       }
     defer {
-      word =
-        switch initialBitRange {
+      container =
+        switch endianness {
         case .mostSignificantFirst:
           Wrapped(bigEndian: storage)
         case .leastSignificantFirst:
@@ -440,8 +438,8 @@ extension EmbeddedIntegerCollection {
     // Fill up the wrapping word from the most-significant element down.
     var remainingElements = count
     while remainingElements > 0, let nextEmbeddedElement = iterator.next() {
-      word <<= Element.bitWidth
-      word |= Wrapped(nextEmbeddedElement)
+      container <<= Element.bitWidth
+      container |= Wrapped(nextEmbeddedElement)
       remainingElements -= 1
     }
     guard remainingElements == 0 else { return nil }
