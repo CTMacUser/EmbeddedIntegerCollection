@@ -227,6 +227,10 @@ extension EmbeddedIntegerCollection: RandomAccessCollection, MutableCollection {
     return indices.distance(from: start, to: end)
   }
 
+  @inlinable
+  public func _customContainsEquatableElement(_ element: Element) -> Bool? {
+    return .some(hasElement(of: element))
+  }
   public func withContiguousStorageIfAvailable<R>(
     _ body: (UnsafeBufferPointer<Element>) throws -> R
   ) rethrows -> R? {
@@ -511,4 +515,28 @@ extension EmbeddedIntegerCollection {
   /// every embedded element.
   @usableFromInline
   static var allEmbeddedOnes: Wrapped { Wrapped.max / Wrapped(Element.max) }
+  /// Generates a collection with every element having a value of
+  /// just its highest bit set.
+  @usableFromInline
+  static var allEmbeddedHighBits: Wrapped {
+    allEmbeddedOnes << (Element.bitWidth - 1)
+  }
+
+  /// Whether at least one embedded element has a value of zero.
+  @usableFromInline
+  var hasZeroElement: Bool {
+    (container &- Self.allEmbeddedOnes) & ~container & Self.allEmbeddedHighBits
+      != 0
+  }
+  /// Whether at least one embedded element has the given value.
+  ///
+  /// - Parameter value: The value to compare against.
+  /// - Returns: `true` if at least one embedded element equals `value`,
+  ///   `false` otherwise.
+  @usableFromInline
+  func hasElement(of value: Element) -> Bool {
+    var values = Self(repeating: value, iteratingFrom: self.endianness)
+    values.container ^= self.container
+    return values.hasZeroElement
+  }
 }

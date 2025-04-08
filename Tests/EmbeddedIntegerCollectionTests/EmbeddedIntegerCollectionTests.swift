@@ -415,3 +415,16 @@ func nonOctetInspectContiguousStorage() async throws {
     } == nil
   )
 }
+
+@Test("Element search", arguments: EmbeddedIterationDirection.allCases)
+func containment(_ endianness: EmbeddedIterationDirection) async throws {
+  let collection = EmbeddedIntegerCollection(
+    embedding: UInt8.self,
+    within: 0x4501_6723 as UInt32,
+    iteratingFrom: endianness
+  )
+  let fullRange: ClosedRange<UInt8> = 0...0xFF
+  #expect(
+    fullRange.filter { collection.contains($0) } == [0x01, 0x23, 0x45, 0x67]
+  )
+}
